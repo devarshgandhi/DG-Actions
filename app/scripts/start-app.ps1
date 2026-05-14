@@ -28,6 +28,8 @@ if (-not (Install-PythonDependencies -ProjectRoot $ProjectRoot)) {
 
 # Setup Flask environment
 Set-FlaskEnvironment
+Clear-LocalPort -Port ([int]$env:FLASK_PORT) -ProcessName "Flask"
+Clear-LocalPort -Port 4321 -ProcessName "Astro"
 
 
 # Start Python server
@@ -49,7 +51,9 @@ if (-not (Install-NodeDependencies -Directory $clientDir)) {
 }
 
 $npmCmd = Get-NpmCommand
-$clientProcess = Start-ManagedProcess -FilePath $npmCmd -WorkingDirectory $clientDir -ArgumentList @("run", "dev", "--", "--no-clearScreen") -ProcessName "Astro client"
+$clientProcess = Start-ManagedProcess -FilePath $npmCmd -WorkingDirectory $clientDir -ArgumentList @("run", "dev", "--", "--no-clearScreen") -ProcessName "Astro client" -EnvironmentVariables @{
+    API_SERVER_URL = "http://localhost:$($env:FLASK_PORT)"
+}
 
 if (-not $clientProcess) {
     Write-Error "Failed to start Astro client"

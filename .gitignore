@@ -28,6 +28,7 @@ pnpm-debug.log*
 # python
 venv
 .venv
+app/venv/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -40,6 +41,7 @@ flask_session/
 htmlcov/
 
 # playwright
+app/client/node_modules/
 app/client/test-results/
 app/client/playwright-report/
 .playwright-mcp/

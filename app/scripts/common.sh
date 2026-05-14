@@ -141,8 +141,32 @@ cleanup_processes() {
 
 # Setup common environment variables for Flask
 setup_flask_env() {
-    export FLASK_DEBUG=1
     export FLASK_PORT=5100
+    export FLASK_DEBUG="${FLASK_DEBUG:-0}"
+}
+
+ensure_port_available() {
+    local port="$1"
+    local process_name="$2"
+
+    if ! command -v lsof >/dev/null 2>&1; then
+        return 0
+    fi
+
+    local pids
+    pids="$(lsof -ti tcp:"$port" 2>/dev/null || true)"
+    if [[ -z "$pids" ]]; then
+        return 0
+    fi
+
+    echo "Port $port is already in use. Stopping existing $process_name process(es): $pids"
+    kill -TERM $pids 2>/dev/null || true
+    sleep 1
+
+    pids="$(lsof -ti tcp:"$port" 2>/dev/null || true)"
+    if [[ -n "$pids" ]]; then
+        kill -KILL $pids 2>/dev/null || true
+    fi
 }
 
 # Print colored message
