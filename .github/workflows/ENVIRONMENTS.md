@@ -37,3 +37,21 @@ The workflows in this repository already pass these environment names to GitHub 
 - `dev`
 - `stage`
 - `prod`
+
+## Azure federated credentials for GitHub OIDC
+
+If you authenticate with Azure using GitHub OIDC, your Microsoft Entra app registration must trust the exact GitHub token subject used by each workflow.
+
+For this repository, create federated identity credentials with these subjects:
+
+- `repo:devarshgandhi/DG-Actions:environment:dev`
+- `repo:devarshgandhi/DG-Actions:environment:stage`
+- `repo:devarshgandhi/DG-Actions:environment:prod`
+
+Recommended settings for each credential:
+
+- Issuer: `https://token.actions.githubusercontent.com`
+- Audience: `api://AzureADTokenExchange`
+- Subject: one of the exact values above
+
+The PR preview deployment workflow also authenticates under the GitHub `dev` environment, so Azure must trust `repo:devarshgandhi/DG-Actions:environment:dev` for preview deploys to succeed.
