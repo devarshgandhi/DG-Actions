@@ -34,6 +34,8 @@ navigate_to_server "$PROJECT_ROOT" "$INITIAL_DIR" || {
 }
 
 setup_flask_env
+ensure_port_available "$FLASK_PORT" "Flask"
+ensure_port_available 4321 "Astro"
 
 # Start Python server in background
 python_cmd=$(get_python_command)
@@ -47,7 +49,7 @@ cd ../client || {
     exit 1
 }
 npm install
-npm run dev -- --no-clearScreen &
+API_SERVER_URL="http://localhost:${FLASK_PORT}" npm run dev -- --no-clearScreen &
 
 # Store the Astro server process ID
 CLIENT_PID=$!

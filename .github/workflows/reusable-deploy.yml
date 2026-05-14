@@ -1,5 +1,8 @@
 name: Reusable Deploy Workflow
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_call:
     inputs:
@@ -11,26 +14,53 @@ on:
         description: Azure environment name to deploy
         required: true
         type: string
+      github-environment-name:
+        description: GitHub deployment environment name to display
+        required: false
+        type: string
+        default: ''
       deploy-ref:
         description: Git ref to deploy (commit SHA, tag, or branch)
         required: false
         type: string
         default: ''
+      transient-environment:
+        description: Whether this is a transient preview deployment
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      deployment-url:
+        description: Deployed application URL
+        value: ${{ jobs.deploy.outputs.deployment-url }}
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  deploy:
+  approval:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment-name }}
+    environment:
+      name: ${{ inputs.github-environment-name || inputs.environment-name }}-approval
+    steps:
+      - name: Approve deployment
+        run: echo "Deployment approved for ${{ inputs.environment-name }}"
+
+  deploy:
+    needs: approval
+    runs-on: ubuntu-latest
+    outputs:
+      deployment-url: ${{ steps.capture-url.outputs.deployment-url }}
+    environment:
+      name: ${{ inputs.github-environment-name || inputs.environment-name }}
+      url: ${{ steps.capture-url.outputs.deployment-url }}
     concurrency:
       group: deploy-${{ inputs.environment-name }}
       cancel-in-progress: false
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.deploy-ref || github.sha }}
 
@@ -44,9 +74,88 @@ jobs:
             --federated-credential-provider "github" \
             --tenant-id "${{ secrets.AZURE_TENANT_ID }}"
 
+      - name: Select Azure environment
+        env:
+          AZURE_ENV_NAME: ${{ inputs.azure-environment-name }}
+          AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          azd env new "$AZURE_ENV_NAME" \
+            --location "$AZURE_LOCATION" \
+            --subscription "$AZURE_SUBSCRIPTION_ID" \
+            --no-prompt >/dev/null 2>&1 || true
+          azd env select "$AZURE_ENV_NAME"
+
+          azd env set AZURE_LOCATION "$AZURE_LOCATION"
+          azd env set AZURE_SUBSCRIPTION_ID "$AZURE_SUBSCRIPTION_ID"
+          azd env set AZURE_ENV_NAME "$AZURE_ENV_NAME"
+          azd env set AZURE_RESOURCE_GROUP "rg-$AZURE_ENV_NAME"
+
       - name: Deploy application
         run: azd up --no-prompt
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_ENV_NAME: ${{ inputs.azure-environment-name }}
           AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
+          AZURE_RESOURCE_GROUP: rg-${{ inputs.azure-environment-name }}
+
+      - name: Capture deployment URL
+        id: capture-url
+        run: |
+          deployment_url="$(azd env get-value SERVICE_WEB_URI 2>/dev/null || true)"
+
+          if [ -z "$deployment_url" ]; then
+            deployment_url="$(azd env get-value WEB_URI 2>/dev/null || true)"
+          fi
+
+          if [ -z "$deployment_url" ]; then
+            deployment_url="$(azd env get-value FRONTEND_ENDPOINT 2>/dev/null || true)"
+          fi
+
+          echo "deployment-url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Register environment URL
+        if: ${{ steps.capture-url.outputs.deployment-url != '' }}
+        id: create-deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          deployment_id="$(gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/deployments" \
+            -f ref="${{ inputs.deploy-ref || github.sha }}" \
+            -f environment="${{ inputs.github-environment-name || inputs.environment-name }}" \
+            -F auto_merge=false \
+            -F transient_environment=${{ inputs.transient-environment && 'true' || 'false' }} \
+            -F production_environment=${{ inputs.environment-name == 'prod' && 'true' || 'false' }} \
+            --raw-field required_contexts=[] \
+            --jq '.id')"
+
+          echo "deployment-id=$deployment_id" >> "$GITHUB_OUTPUT"
+
+      - name: Mark deployment successful
+        if: ${{ steps.create-deployment.outputs.deployment-id != '' && steps.capture-url.outputs.deployment-url != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/deployments/${{ steps.create-deployment.outputs.deployment-id }}/statuses" \
+            -f state=success \
+            -f environment="${{ inputs.github-environment-name || inputs.environment-name }}" \
+            -f environment_url="${{ steps.capture-url.outputs.deployment-url }}" \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Write deployment URL artifact
+        if: ${{ steps.capture-url.outputs.deployment-url != '' }}
+        run: printf '%s' "${{ steps.capture-url.outputs.deployment-url }}" > deployment-url.txt
+
+      - name: Upload deployment URL artifact
+        if: ${{ steps.capture-url.outputs.deployment-url != '' }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ inputs.environment-name }}-deployment-url
+          path: deployment-url.txt
+          retention-days: 7

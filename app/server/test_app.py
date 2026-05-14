@@ -32,6 +32,17 @@ class TestApp(unittest.TestCase):
         mock_query_instance.all.return_value = dogs
         return mock_query_instance
 
+    def test_health_check(self):
+        """Test the API health check endpoint"""
+        response = self.app.get('/')
+
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.data)
+        self.assertEqual(data['service'], 'tailspin-shelter-api')
+        self.assertEqual(data['status'], 'ok')
+        self.assertEqual(data['endpoints'], ['/api/dogs', '/api/dogs/<id>'])
+
     @patch('app.db.session.query')
     def test_get_dogs_success(self, mock_query):
         """Test successful retrieval of multiple dogs"""
