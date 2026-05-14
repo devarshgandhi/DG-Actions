@@ -33,7 +33,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       deployment-url: ${{ steps.capture-url.outputs.deployment-url }}
-    environment: ${{ inputs.environment-name }}
+    environment:
+      name: ${{ inputs.environment-name }}
+      url: ${{ steps.capture-url.outputs.deployment-url }}
     concurrency:
       group: deploy-${{ inputs.environment-name }}
       cancel-in-progress: false
@@ -74,6 +76,40 @@ jobs:
           fi
 
           echo "deployment-url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Register environment URL
+        if: ${{ steps.capture-url.outputs.deployment-url != '' }}
+        id: create-deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          deployment_id="$(gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/deployments" \
+            -f ref="${{ inputs.deploy-ref || github.sha }}" \
+            -f environment="${{ inputs.environment-name }}" \
+            -f transient_environment=false \
+            -f production_environment=${{ inputs.environment-name == 'prod' && 'true' || 'false' }} \
+            -F auto_merge=false \
+            -F required_contexts[]= \
+            --jq '.id')"
+
+          echo "deployment-id=$deployment_id" >> "$GITHUB_OUTPUT"
+
+      - name: Mark deployment successful
+        if: ${{ steps.create-deployment.outputs.deployment-id != '' && steps.capture-url.outputs.deployment-url != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/deployments/${{ steps.create-deployment.outputs.deployment-id }}/statuses" \
+            -f state=success \
+            -f environment="${{ inputs.environment-name }}" \
+            -f environment_url="${{ steps.capture-url.outputs.deployment-url }}" \
+            -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Write deployment URL artifact
         if: ${{ steps.capture-url.outputs.deployment-url != '' }}
