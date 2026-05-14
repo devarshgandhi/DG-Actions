@@ -1,5 +1,8 @@
 name: Reusable Deploy Workflow
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_call:
     inputs:
@@ -30,7 +33,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.deploy-ref || github.sha }}
 
