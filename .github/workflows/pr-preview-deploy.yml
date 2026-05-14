@@ -33,7 +33,6 @@ jobs:
     with:
       environment-name: dev
       azure-environment-name: dev
-      github-environment-name: pr-${{ github.event.pull_request.number }}-preview
       deploy-ref: ${{ github.event.pull_request.head.sha }}
       transient-environment: true
     secrets: inherit
