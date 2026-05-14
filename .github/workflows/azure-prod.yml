@@ -1,0 +1,18 @@
+name: Deploy Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy-ref:
+        description: Git ref to deploy to prod
+        required: false
+        default: main
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      environment-name: prod
+      azure-environment-name: prod
+      deploy-ref: ${{ inputs.deploy-ref }}
+    secrets: inherit

@@ -1,0 +1,14 @@
+name: Deploy Dev
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      environment-name: dev
+      azure-environment-name: dev
+    secrets: inherit

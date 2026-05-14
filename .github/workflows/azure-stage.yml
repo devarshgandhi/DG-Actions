@@ -1,0 +1,18 @@
+name: Deploy Stage
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy-ref:
+        description: Git ref to deploy to stage
+        required: false
+        default: main
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      environment-name: stage
+      azure-environment-name: stage
+      deploy-ref: ${{ inputs.deploy-ref }}
+    secrets: inherit

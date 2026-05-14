@@ -1,4 +1,16 @@
 # For more information, see [docs](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#codeowners-syntax)
 
+# Sample patterns (commented out so they do not affect ownership):
+#
+# Own a specific folder:
+# /app/client/ @frontend-team
+#
+# Own files by extension anywhere in the repo:
+# *.md @docs-team
+#
+# Use a more specific rule to override a broader one:
+# /app/server/ @backend-team
+# /app/server/models/ @data-team
+#
 # This repository is maintained by: 
-* @geektrainer @peckjon @chrisreddington
+* @devarshgandhi
