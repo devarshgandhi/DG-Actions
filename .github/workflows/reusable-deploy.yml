@@ -65,6 +65,24 @@ jobs:
             --federated-credential-provider "github" \
             --tenant-id "${{ secrets.AZURE_TENANT_ID }}"
 
+      - name: Select Azure environment
+        env:
+          AZURE_ENV_NAME: ${{ inputs.azure-environment-name }}
+          AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          if azd env get-values -e "$AZURE_ENV_NAME" >/dev/null 2>&1; then
+            azd env select "$AZURE_ENV_NAME"
+          else
+            azd env new "$AZURE_ENV_NAME" \
+              --location "$AZURE_LOCATION" \
+              --subscription "$AZURE_SUBSCRIPTION_ID" \
+              --no-prompt
+          fi
+
+          azd env set AZURE_LOCATION "$AZURE_LOCATION"
+          azd env set AZURE_SUBSCRIPTION_ID "$AZURE_SUBSCRIPTION_ID"
+
       - name: Deploy application
         run: azd up --no-prompt
         env:
