@@ -39,7 +39,16 @@ permissions:
   contents: read
 
 jobs:
+  approval:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.github-environment-name || inputs.environment-name }}-approval
+    steps:
+      - name: Approve deployment
+        run: echo "Deployment approved for ${{ inputs.environment-name }}"
+
   deploy:
+    needs: approval
     runs-on: ubuntu-latest
     outputs:
       deployment-url: ${{ steps.capture-url.outputs.deployment-url }}
