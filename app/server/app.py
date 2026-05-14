@@ -14,6 +14,17 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize the database with the app
 init_db(app)
 
+@app.route('/', methods=['GET'])
+def health_check() -> Response:
+    return jsonify({
+        'service': 'tailspin-shelter-api',
+        'status': 'ok',
+        'endpoints': [
+            '/api/dogs',
+            '/api/dogs/<id>'
+        ]
+    })
+
 @app.route('/api/dogs', methods=['GET'])
 def get_dogs() -> Response:
     page = request.args.get('page', 1, type=int)

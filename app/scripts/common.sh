@@ -145,6 +145,30 @@ setup_flask_env() {
     export FLASK_PORT=5100
 }
 
+ensure_port_available() {
+    local port="$1"
+    local process_name="$2"
+
+    if ! command -v lsof >/dev/null 2>&1; then
+        return 0
+    fi
+
+    local pids
+    pids="$(lsof -ti tcp:"$port" 2>/dev/null || true)"
+    if [[ -z "$pids" ]]; then
+        return 0
+    fi
+
+    echo "Port $port is already in use. Stopping existing $process_name process(es): $pids"
+    xargs -r kill -TERM <<< "$pids" 2>/dev/null || true
+    sleep 1
+
+    pids="$(lsof -ti tcp:"$port" 2>/dev/null || true)"
+    if [[ -n "$pids" ]]; then
+        xargs -r kill -KILL <<< "$pids" 2>/dev/null || true
+    fi
+}
+
 # Print colored message
 print_success() {
     local message="$1"

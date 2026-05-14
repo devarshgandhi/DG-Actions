@@ -1,8 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import DogList from '../components/DogList.astro';
+import { getApiServerUrl } from '../utils/api';
 
-const API_SERVER_URL = process.env.API_SERVER_URL || 'http://localhost:5100';
+const API_SERVER_URL = getApiServerUrl();
 const PAGE_SIZE = 6;
 
 let dogs = [];

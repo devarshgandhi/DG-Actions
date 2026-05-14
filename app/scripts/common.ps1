@@ -88,17 +88,43 @@ function Set-FlaskEnvironment {
     $env:FLASK_PORT = 5100
 }
 
+function Clear-LocalPort {
+    param(
+        [int]$Port,
+        [string]$ProcessName
+    )
+
+    try {
+        $listeners = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty OwningProcess -Unique
+
+        foreach ($processId in $listeners) {
+            if ($processId) {
+                Write-Host "Port $Port is already in use. Stopping existing $ProcessName process $processId..."
+                Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+            }
+        }
+    } catch {
+        Write-Warning "Unable to clear port $Port: $_"
+    }
+}
+
 # Start a process with proper error handling
 function Start-ManagedProcess {
     param(
         [string]$FilePath,
         [string]$WorkingDirectory,
         [string[]]$ArgumentList,
-        [string]$ProcessName
+        [string]$ProcessName,
+        [hashtable]$EnvironmentVariables = @{}
     )
     
     try {
         Write-Host "Starting $ProcessName..."
+        foreach ($entry in $EnvironmentVariables.GetEnumerator()) {
+            [System.Environment]::SetEnvironmentVariable($entry.Key, $entry.Value, 'Process')
+        }
+
         $process = Start-Process $FilePath `
             -WorkingDirectory $WorkingDirectory `
             -ArgumentList $ArgumentList `
