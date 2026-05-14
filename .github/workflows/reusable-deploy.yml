@@ -14,11 +14,21 @@ on:
         description: Azure environment name to deploy
         required: true
         type: string
+      github-environment-name:
+        description: GitHub deployment environment name to display
+        required: false
+        type: string
+        default: ''
       deploy-ref:
         description: Git ref to deploy (commit SHA, tag, or branch)
         required: false
         type: string
         default: ''
+      transient-environment:
+        description: Whether this is a transient preview deployment
+        required: false
+        type: boolean
+        default: false
     outputs:
       deployment-url:
         description: Deployed application URL
@@ -34,7 +44,7 @@ jobs:
     outputs:
       deployment-url: ${{ steps.capture-url.outputs.deployment-url }}
     environment:
-      name: ${{ inputs.environment-name }}
+      name: ${{ inputs.github-environment-name || inputs.environment-name }}
       url: ${{ steps.capture-url.outputs.deployment-url }}
     concurrency:
       group: deploy-${{ inputs.environment-name }}
@@ -88,8 +98,8 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             "/repos/${{ github.repository }}/deployments" \
             -f ref="${{ inputs.deploy-ref || github.sha }}" \
-            -f environment="${{ inputs.environment-name }}" \
-            -f transient_environment=false \
+            -f environment="${{ inputs.github-environment-name || inputs.environment-name }}" \
+            -f transient_environment=${{ inputs.transient-environment && 'true' || 'false' }} \
             -f production_environment=${{ inputs.environment-name == 'prod' && 'true' || 'false' }} \
             -F auto_merge=false \
             -F required_contexts[]= \
@@ -107,7 +117,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             "/repos/${{ github.repository }}/deployments/${{ steps.create-deployment.outputs.deployment-id }}/statuses" \
             -f state=success \
-            -f environment="${{ inputs.environment-name }}" \
+            -f environment="${{ inputs.github-environment-name || inputs.environment-name }}" \
             -f environment_url="${{ steps.capture-url.outputs.deployment-url }}" \
             -f log_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
