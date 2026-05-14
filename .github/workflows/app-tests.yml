@@ -1,0 +1,53 @@
+name: App Tests
+
+on:
+  workflow_call:
+    inputs:
+      test-ref:
+        description: Git ref to test (commit SHA, tag, or branch)
+        required: false
+        type: string
+        default: ''
+  pull_request:
+    paths:
+      - 'app/server/**'
+      - '.github/workflows/app-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'app/server/**'
+      - '.github/workflows/app-tests.yml'
+
+jobs:
+  python-tests:
+    name: Python ${{ matrix.python-version }} unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    defaults:
+      run:
+        working-directory: app/server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.test-ref || github.sha }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: app/server/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: python -m unittest -v test_app.py

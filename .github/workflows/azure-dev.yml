@@ -6,7 +6,14 @@ on:
     branches: [main]
 
 jobs:
+  app-tests:
+    uses: ./.github/workflows/app-tests.yml
+
+  e2e-tests:
+    uses: ./.github/workflows/e2e-tests.yml
+
   deploy:
+    needs: [app-tests, e2e-tests]
     uses: ./.github/workflows/reusable-deploy.yml
     with:
       environment-name: dev
