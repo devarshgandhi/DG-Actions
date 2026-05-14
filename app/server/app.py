@@ -11,6 +11,10 @@ db_path: str = os.environ.get('DATABASE_PATH', os.path.join(base_dir, 'dogshelte
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+
+def is_debug_enabled() -> bool:
+    return os.environ.get('FLASK_DEBUG', '').strip().lower() in {'1', 'true', 'yes', 'on'}
+
 # Initialize the database with the app
 init_db(app)
 
@@ -91,4 +95,4 @@ def get_dog(id: int) -> tuple[Response, int] | Response:
 ## HERE
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5100) # Port 5100 to avoid macOS conflicts
+    app.run(debug=is_debug_enabled(), port=5100) # Port 5100 to avoid macOS conflicts

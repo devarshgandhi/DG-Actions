@@ -84,8 +84,10 @@ function Invoke-PythonScript {
 
 # Setup Flask environment variables
 function Set-FlaskEnvironment {
-    $env:FLASK_DEBUG = 1
     $env:FLASK_PORT = 5100
+    if (-not $env:FLASK_DEBUG) {
+        $env:FLASK_DEBUG = 0
+    }
 }
 
 function Clear-LocalPort {

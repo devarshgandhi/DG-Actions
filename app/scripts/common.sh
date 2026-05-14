@@ -141,8 +141,8 @@ cleanup_processes() {
 
 # Setup common environment variables for Flask
 setup_flask_env() {
-    export FLASK_DEBUG=1
     export FLASK_PORT=5100
+    export FLASK_DEBUG="${FLASK_DEBUG:-0}"
 }
 
 ensure_port_available() {
