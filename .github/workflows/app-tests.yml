@@ -15,11 +15,6 @@ on:
     paths:
       - 'app/server/**'
       - '.github/workflows/app-tests.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'app/server/**'
-      - '.github/workflows/app-tests.yml'
 
 jobs:
   python-tests:
