@@ -160,12 +160,12 @@ ensure_port_available() {
     fi
 
     echo "Port $port is already in use. Stopping existing $process_name process(es): $pids"
-    xargs -r kill -TERM <<< "$pids" 2>/dev/null || true
+    kill -TERM $pids 2>/dev/null || true
     sleep 1
 
     pids="$(lsof -ti tcp:"$port" 2>/dev/null || true)"
     if [[ -n "$pids" ]]; then
-        xargs -r kill -KILL <<< "$pids" 2>/dev/null || true
+        kill -KILL $pids 2>/dev/null || true
     fi
 }
 
