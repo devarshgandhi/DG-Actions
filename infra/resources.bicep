@@ -111,7 +111,7 @@ module client 'br/public:avm/res/app/container-app:0.8.0' = {
           }
           {
             name: 'API_SERVER_URL'
-            value: 'https://${server.outputs.fqdn}'
+            value: 'http://server'
           }
         ]
       }
@@ -200,3 +200,6 @@ module server 'br/public:avm/res/app/container-app:0.8.0' = {
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.outputs.loginServer
 output AZURE_RESOURCE_CLIENT_ID string = client.outputs.resourceId
 output AZURE_RESOURCE_SERVER_ID string = server.outputs.resourceId
+output SERVICE_WEB_URI string = 'https://${client.outputs.fqdn}'
+output WEB_URI string = 'https://${client.outputs.fqdn}'
+output FRONTEND_ENDPOINT string = 'https://${client.outputs.fqdn}'
