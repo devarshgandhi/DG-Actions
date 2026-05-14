@@ -33,7 +33,7 @@ jobs:
     with:
       environment-name: dev
       azure-environment-name: dev
-      deploy-ref: ${{ github.event.pull_request.base.sha }}
+      deploy-ref: ${{ github.event.pull_request.head.sha }}
       transient-environment: true
     secrets: inherit
 
@@ -45,7 +45,7 @@ jobs:
     env:
       DEPLOYMENT_URL: ${{ needs.preview-deploy.outputs.deployment-url }}
       COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
-      DEPLOYED_SHA: ${{ github.event.pull_request.base.sha }}
+      DEPLOYED_SHA: ${{ github.event.pull_request.head.sha }}
 
     steps:
       - name: Create or update PR comment
@@ -64,9 +64,7 @@ jobs:
               '',
               'Azure environment: dev',
               `Tested PR commit: ${commitSha}`,
-              `Deployed trusted base commit: ${deployedSha}`,
-              '',
-              'This workflow validates the pull request commit, but the deployment itself uses the base branch commit so Azure secrets are not exposed to untrusted PR code.',
+              `Deployed PR commit: ${deployedSha}`,
             ].join('\n');
 
             const comments = await github.rest.issues.listComments({
