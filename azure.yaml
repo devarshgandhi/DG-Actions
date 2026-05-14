@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: dg-actions
+metadata:
+    template: azd-init@1.25.0
+services:
+    client:
+        project: app/client
+        host: containerapp
+        language: ts
+        docker:
+            path: Dockerfile
+    server:
+        project: app/server
+        host: containerapp
+        language: python
+resources:
+    client:
+        type: host.containerapp
+        port: 4321
+    server:
+        type: host.containerapp
+        port: 80
