@@ -99,10 +99,10 @@ jobs:
             "/repos/${{ github.repository }}/deployments" \
             -f ref="${{ inputs.deploy-ref || github.sha }}" \
             -f environment="${{ inputs.github-environment-name || inputs.environment-name }}" \
-            -f transient_environment=${{ inputs.transient-environment && 'true' || 'false' }} \
-            -f production_environment=${{ inputs.environment-name == 'prod' && 'true' || 'false' }} \
             -F auto_merge=false \
-            -F required_contexts[]= \
+            -F transient_environment=${{ inputs.transient-environment && 'true' || 'false' }} \
+            -F production_environment=${{ inputs.environment-name == 'prod' && 'true' || 'false' }} \
+            --raw-field required_contexts=[] \
             --jq '.id')"
 
           echo "deployment-id=$deployment_id" >> "$GITHUB_OUTPUT"

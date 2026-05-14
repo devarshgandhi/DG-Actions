@@ -14,17 +14,20 @@ permissions:
 
 jobs:
   app-tests:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     uses: ./.github/workflows/app-tests.yml
     with:
       test-ref: ${{ github.event.pull_request.head.sha }}
 
   e2e-tests:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     uses: ./.github/workflows/e2e-tests.yml
     with:
       test-ref: ${{ github.event.pull_request.head.sha }}
 
   preview-deploy:
     name: Preview Deployment
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     needs: [app-tests, e2e-tests]
     uses: ./.github/workflows/reusable-deploy.yml
     with:
@@ -40,6 +43,9 @@ jobs:
     needs: [preview-deploy]
     runs-on: ubuntu-latest
     if: ${{ needs.preview-deploy.outputs.deployment-url != '' }}
+    env:
+      DEPLOYMENT_URL: ${{ needs.preview-deploy.outputs.deployment-url }}
+      COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
 
     steps:
       - name: Create or update PR comment
@@ -48,14 +54,15 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
-            const deploymentUrl = '${{ needs.preview-deploy.outputs.deployment-url }}';
+            const deploymentUrl = process.env.DEPLOYMENT_URL;
+            const commitSha = process.env.COMMIT_SHA;
             const marker = '<!-- pr-preview-deployment -->';
             const body = [
               marker,
               `Preview deployment is live: ${deploymentUrl}`,
               '',
               'Azure environment: dev',
-              `Commit: ${context.payload.pull_request.head.sha}`,
+              `Commit: ${commitSha}`,
             ].join('\n');
 
             const comments = await github.rest.issues.listComments({

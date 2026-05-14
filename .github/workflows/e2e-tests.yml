@@ -11,15 +11,6 @@ on:
         required: false
         type: string
         default: ''
-  pull_request:
-    paths:
-      - 'app/**'
-      - '.github/workflows/e2e-tests.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'app/**'
-      - '.github/workflows/e2e-tests.yml'
 
 jobs:
   playwright:

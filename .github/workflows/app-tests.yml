@@ -11,10 +11,6 @@ on:
         required: false
         type: string
         default: ''
-  pull_request:
-    paths:
-      - 'app/server/**'
-      - '.github/workflows/app-tests.yml'
 
 jobs:
   python-tests:
